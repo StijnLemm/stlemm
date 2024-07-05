@@ -1,4 +1,5 @@
 #! /bin/zsh
+set -e
 
 echo '[INFO] Starting build:'
 mkdir -p ./build/ > /dev/null
@@ -11,7 +12,7 @@ if [ $# = 1 ]; then
 fi
 
 echo '[INFO] Building 64-bit!'
-time clang++ -Wno-deprecated-declarations -std=c++17 main.cpp -o ./build/program && ./build/program
-
+time clang++ -Wno-deprecated-declarations -std=c++17 main.cpp -o ./build/program
+/usr/bin/time -al ./build/program
 echo '[INFO] Done'
 
