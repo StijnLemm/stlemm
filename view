@@ -1,0 +1,14 @@
+#pragma once
+
+#include "base.h"
+
+template<typename T>
+class View
+{
+public:
+	explicit View(T* ptr, const usize count) : _ptr(ptr), _item_count(count) {}
+private:
+	T* _ptr;
+	const usize _item_count;
+};
+
