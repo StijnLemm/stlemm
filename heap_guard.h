@@ -60,13 +60,29 @@ inline void HeapGuard::hex_dump()
                 printf("     ");
                 continue;
             }
-            const char c = (char)(*(column_start + column));
+            const u8 c = (u8)(*(column_start + column));
             printf("0x%02x ", c);
         }
         printf(" | ");
 
         // print char stuff
-        printf("%.*s", (int)COLUMN_WIDTH, column_start);
+        for (usize column = 0; column < COLUMN_WIDTH; column++)
+        {
+            if (column + byte_count >= heap_size)
+            {
+                break;
+            }
+            const char c = (char)(*(column_start + column));
+            if (c > 0x10)
+            {
+                printf("%c", c);
+            }
+            else
+            {
+                printf(" ");
+            }
+        }
+
         printf("\n");
     }
 }

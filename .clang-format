@@ -2,6 +2,8 @@ BasedOnStyle: Google
 
 ColumnLimit: 100
 
+AllowShortFunctionsOnASingleLine: Empty
+
 IndentWidth: 4
 AccessModifierOffset: -4
 BraceWrapping:

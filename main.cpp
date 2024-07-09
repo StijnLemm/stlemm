@@ -4,9 +4,8 @@
 
 // must be first
 #include "heap_guard.h"
+#include "memory.h"
 #include "view.h"
-
-#define PRINT_DATA_BREAK View<void>(sbrk(0), 0).dump()
 
 void test_views()
 {
@@ -28,17 +27,45 @@ void* naive_alloc(const usize size)
     return prev;
 }
 
+struct S
+{
+    i16 a;
+    i16 b;
+};
+
+template <usize size>
+void test_memory_copy()
+{
+    u8* new_data = (u8*)naive_alloc(size);
+    u8 need_copy[size] = {0};
+    for (usize i = 0; i < size; i++)
+    {
+        need_copy[i] = i;
+    }
+    Memory::copy(new_data, need_copy, size);
+}
+
+void test_memory_copy_typed()
+{
+    S* ptr = (S*)naive_alloc(sizeof(S) * 10);
+    S array[10];
+    for (i16 i = 0; i < 10; i++)
+    {
+        array[i] = {i, i};
+    }
+    Memory::copy(ptr, array, 10);
+}
+
+void test_memory_alloc()
+{
+    u8* data = Memory::alloc<u8>(8);
+}
+
 int main(int argc, char* argv[])
 {
     HeapGuard::dump();
-
-    char* new_data = (char*)naive_alloc(65);
-    new_data[0] = 'h';
-    new_data[1] = 'i';
-    new_data[2] = '!';
-    new_data[64] = 'E';
-
+    // test_views();
+    // test_memory_copy<128>();
+    test_memory_alloc();
     HeapGuard::hex_dump();
-
-    test_views();
 }
