@@ -3,6 +3,7 @@
 #include <unistd.h>
 
 #include "base.h"
+#include "memory.h"
 
 #ifdef STLEMM_DEBUG
 #include <cstdio>
@@ -14,7 +15,7 @@ public:
     static usize size()
     {
         void* data_brk = sbrk(0);
-        return (usize)data_brk - (usize)_start;
+        return (usize)data_brk - (usize)start();
     }
 
 #ifdef STLEMM_DEBUG
@@ -23,7 +24,10 @@ public:
 #endif
 
 private:
-    static inline const void* _start = sbrk(0);  // todo, static init order fiasco
+    static inline void* start()
+    {
+        return Memory::Heap::start;
+    }
 };
 
 #ifdef STLEMM_DEBUG
@@ -31,7 +35,7 @@ inline void HeapGuard::dump()
 {
     void* data_brk = sbrk(0);
     printf("--- Heap guard info ---\n");
-    printf("Heap start\t: %p\n", _start);
+    printf("Heap start\t: %p\n", start());
     printf("Heap end\t: %p\n", data_brk);
     printf("Heap size\t: %zu\n", size());
 }
@@ -46,7 +50,7 @@ inline void HeapGuard::hex_dump()
     const usize heap_size = size();
     for (usize byte_count = 0; byte_count < heap_size; byte_count += COLUMN_WIDTH)
     {
-        const char* column_start = ((const char*)(_start)) + (byte_count);
+        const char* column_start = ((const char*)(start())) + (byte_count);
 
         // print addr
         printf("%zu\t| %p", byte_count, column_start);

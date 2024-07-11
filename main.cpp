@@ -1,6 +1,7 @@
 #include <unistd.h>
 
 #include <cstdio>
+#include <cstdlib>
 
 // must be first
 #include "heap_guard.h"
@@ -56,9 +57,53 @@ void test_memory_copy_typed()
     Memory::copy(ptr, array, 10);
 }
 
+void fill_data(u8* data, const usize size, u8 c)
+{
+    for (usize i = 0; i < size; i++)
+    {
+        data[i] = c;
+    }
+}
+
 void test_memory_alloc()
 {
-    u8* data = Memory::alloc<u8>(8);
+    // helper_memory_alloc(8);
+    // helper_memory_alloc(16);
+    // helper_memory_alloc(24);
+    // for (int i = 8; i <= 64; i += 8)
+    // {
+    //     u8* data = Memory::alloc<u8>(i);
+    //     fill_data(data, i);
+    //     Memory::free(data);
+    // }
+
+    for (int i = 0; i <= 100; i++)
+    {
+        int needed_bytes = rand() % 100;
+        u8* data = Memory::alloc<u8>(needed_bytes);
+        fill_data(data, needed_bytes, '#');
+        printf("\e[1;1H\e[2J");
+        printf("Allocating: %d\n", needed_bytes);
+        HeapGuard::hex_dump();
+        usleep(1000 * 1000);
+        if (needed_bytes % 3 == 0)
+        {
+            fill_data(data, needed_bytes, '*');
+            Memory::free(data);
+            continue;
+        }
+        fill_data(data, needed_bytes, '!');
+    }
+
+    // u8* data = Memory::alloc<u8>(16);
+    // fill_data(data, 16);
+    // u8* data1 = Memory::alloc<u8>(16);
+    // fill_data(data, 16);
+    // fill_data(data1, 16);
+    // Memory::free(data);
+    // Memory::free(data1);
+    // data = Memory::alloc<u8>(32 + sizeof(Memory::MemoryChunk));
+    // fill_data(data, 32 + sizeof(Memory::MemoryChunk));
 }
 
 int main(int argc, char* argv[])
