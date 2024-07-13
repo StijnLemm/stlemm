@@ -6,6 +6,7 @@
 // must be first
 #include "heap_guard.h"
 #include "memory.h"
+#include "owner.h"
 #include "view.h"
 
 void test_views()
@@ -30,8 +31,8 @@ void* naive_alloc(const usize size)
 
 struct S
 {
-    i16 a;
-    i16 b;
+    i32 a;
+    i32 b;
 };
 
 template <usize size>
@@ -80,19 +81,21 @@ void test_memory_alloc()
     for (int i = 0; i <= 100; i++)
     {
         int needed_bytes = rand() % 100;
-        u8* data = Memory::alloc<u8>(needed_bytes);
+        u8* data = Memory::Heap::alloc<u8>(needed_bytes);
         fill_data(data, needed_bytes, '#');
         printf("\e[1;1H\e[2J");
         printf("Allocating: %d\n", needed_bytes);
         HeapGuard::hex_dump();
         usleep(1000 * 1000);
-        if (needed_bytes % 3 == 0)
+        if (needed_bytes % 8 == 0)
         {
-            fill_data(data, needed_bytes, '*');
-            Memory::free(data);
+            // leaks
+            fill_data(data, needed_bytes, '!');
             continue;
         }
-        fill_data(data, needed_bytes, '!');
+
+        fill_data(data, needed_bytes, '*');
+        Memory::Heap::free(data);
     }
 
     // u8* data = Memory::alloc<u8>(16);
@@ -106,11 +109,17 @@ void test_memory_alloc()
     // fill_data(data, 32 + sizeof(Memory::MemoryChunk));
 }
 
+void take(Memory::Owner<S> v) {}
+
 int main(int argc, char* argv[])
 {
     HeapGuard::dump();
     // test_views();
     // test_memory_copy<128>();
-    test_memory_alloc();
+    // test_memory_alloc();
+    auto p = Memory::Owner<S>::create(1, 2);
+    take(Memory::move(p));
+    // assert(p.get() == nullptr);
+
     HeapGuard::hex_dump();
 }

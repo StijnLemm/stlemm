@@ -14,9 +14,18 @@ class View
 {
 public:
     explicit View(T* ptr, const usize count) : _ptr(ptr), _item_count(count) {}
-    constexpr T* data() const { return _ptr; }
-    constexpr usize count() const { return _item_count; }
-    constexpr usize size() const { return _item_count * sizeof(T); }
+    constexpr T* data() const
+    {
+        return _ptr;
+    }
+    constexpr usize count() const
+    {
+        return _item_count;
+    }
+    constexpr usize size() const
+    {
+        return _item_count * sizeof(T);
+    }
 
     template <typename AllocType>
     constexpr View<std::remove_cv_t<T>> copy(Allocator::Base<AllocType>& alloc)
@@ -28,7 +37,7 @@ public:
 
     constexpr View<std::remove_cv_t<T>> copy()
     {
-        T* new_memory = Memory::alloc<T>(this->count());
+        T* new_memory = Memory::Heap::alloc<T>(this->count());
         Memory::copy(new_memory, this->_ptr, this->size());
         return View<std::remove_cv_t<T>>(new_memory, this->size());
     }

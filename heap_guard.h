@@ -26,7 +26,7 @@ public:
 private:
     static inline void* start()
     {
-        return Memory::Heap::start;
+        return Memory::Heap::start();
     }
 };
 
