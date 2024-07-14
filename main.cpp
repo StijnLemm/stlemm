@@ -98,15 +98,16 @@ void test_memory_alloc()
         Memory::Heap::free(data);
     }
 
-    // u8* data = Memory::alloc<u8>(16);
-    // fill_data(data, 16);
-    // u8* data1 = Memory::alloc<u8>(16);
-    // fill_data(data, 16);
+    // u8* data = Memory::Heap::alloc<u8>(16);
+    // fill_data(data, 16, '#');
+    // u8* data1 = Memory::Heap::alloc<u8>(16);
+    // fill_data(data1, 16, '#');
     // fill_data(data1, 16);
-    // Memory::free(data);
-    // Memory::free(data1);
-    // data = Memory::alloc<u8>(32 + sizeof(Memory::MemoryChunk));
-    // fill_data(data, 32 + sizeof(Memory::MemoryChunk));
+    // Memory::Heap::free(data);
+    // Memory::Heap::free(data1);
+
+    // data = Memory::Heap::alloc<u8>(32 + 8);
+    // fill_data(data, 32 + 8, '@');
 }
 
 void take(Memory::Owner<S> v) {}
