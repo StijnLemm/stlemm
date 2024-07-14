@@ -60,6 +60,16 @@ struct MemoryChunk
         }
     }
 
+    constexpr usize combined_chunk_size(const MemoryChunk* other) const
+    {
+        return other->chunk_size() + this->chunk_size() + sizeof(MemoryChunk);
+    }
+
+    constexpr void combine_into_me(const MemoryChunk* other)
+    {
+        this->set_chunk_size(combined_chunk_size(other));
+    }
+
     constexpr bool is_used() const
     {
         return this->size & CHUNK_IN_USE_FLAG;
@@ -119,9 +129,9 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
     while (iter->chunk_size() != 0 && (iter->is_used() || iter->chunk_size() < needed_bytes))
     {
         if (!iter->is_used() && prev != nullptr && !prev->is_used() &&
-            prev->chunk_size() + iter->chunk_size() + sizeof(MemoryChunk) >= needed_bytes)
+            prev->combined_chunk_size(iter) >= needed_bytes)
         {
-            prev->set_chunk_size(prev->chunk_size() + iter->chunk_size() + sizeof(MemoryChunk));
+            prev->combine_into_me(iter);
             prev->set_used(true);
             return prev->data_ptr<void>();
         }

@@ -1,7 +1,5 @@
 #pragma once
 
-#include <new>  // fuck this shit
-
 #include "memory.h"
 
 namespace Memory
@@ -14,14 +12,18 @@ public:
     template <typename... Args>
     static Owner<T> create(Args... args) noexcept
     {
-        T* mem = Heap::alloc<T>(1);
+        T* mem = Memory::Heap::alloc<T>(1);
         return Owner<T>(new (mem) T{args...});
     }
 
     Owner(T* ptr) : _ptr(ptr) {}
     ~Owner() noexcept
     {
-        Heap::free(_ptr);
+        if (_ptr != nullptr)
+        {
+            _ptr->~T();
+        }
+        Memory::Heap::free(_ptr);
     }
 
     Owner(Owner<T>& other) = delete;
@@ -43,5 +45,18 @@ public:
 private:
     T* _ptr;
 };
+
+// template <typename T>
+// class OwnerView : private Owner<T>
+// {
+// public:
+//     constexpr View<T> as_view()
+//     {
+//         return View<T>(get(), size);
+//     }
+//
+// private:
+//     const usize size;
+// };
 
 }  // namespace Memory

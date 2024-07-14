@@ -1,13 +1,59 @@
 #include <unistd.h>
 
 #include <cstdio>
-#include <cstdlib>
 
 // must be first
+#include "filesystem.h"
 #include "heap_guard.h"
 #include "memory.h"
 #include "owner.h"
 #include "view.h"
+#include "view_owner.h"
+
+class LifeTime
+{
+public:
+    char mem[8];
+    // Default constructor
+    LifeTime()
+    {
+        const char* text = "LifeTime";
+        Memory::copy(mem, text, 8);
+        printf("[LifeTime] Default constructor called\n");
+    }
+
+    // Copy constructor
+    LifeTime(const LifeTime&)
+    {
+        printf("[LifeTime] Copy constructor called\n");
+    }
+
+    // Move constructor
+    LifeTime(LifeTime&&) noexcept
+    {
+        printf("[LifeTime] Move constructor called\n");
+    }
+
+    // Copy assignment operator
+    LifeTime& operator=(const LifeTime&)
+    {
+        printf("[LifeTime] Copy assignment operator called\n");
+        return *this;
+    }
+
+    // Move assignment operator
+    LifeTime& operator=(LifeTime&&) noexcept
+    {
+        printf("[LifeTime] Move assignment operator called\n");
+        return *this;
+    }
+
+    // Destructor
+    ~LifeTime()
+    {
+        printf("[LifeTime] Destructor called\n");
+    }
+};
 
 void test_views()
 {
@@ -71,32 +117,35 @@ void test_memory_alloc()
     // helper_memory_alloc(8);
     // helper_memory_alloc(16);
     // helper_memory_alloc(24);
-    // for (int i = 8; i <= 64; i += 8)
+    // for (int i = 1; i <= 100; i++)
     // {
-    //     u8* data = Memory::alloc<u8>(i);
-    //     fill_data(data, i);
-    //     Memory::free(data);
+    //     u8* data = Memory::Heap::alloc<u8>(i);
+    //     fill_data(data, i, i + 0x30);
+    //     Memory::Heap::free(data);
+    //     printf("\e[1;1H\e[2J");
+    //     HeapGuard::hex_dump();
+    //     usleep(1000 * 1000);
     // }
 
-    for (int i = 0; i <= 100; i++)
-    {
-        int needed_bytes = rand() % 100;
-        u8* data = Memory::Heap::alloc<u8>(needed_bytes);
-        fill_data(data, needed_bytes, '#');
-        printf("\e[1;1H\e[2J");
-        printf("Allocating: %d\n", needed_bytes);
-        HeapGuard::hex_dump();
-        usleep(1000 * 1000);
-        if (needed_bytes % 8 == 0)
-        {
-            // leaks
-            fill_data(data, needed_bytes, '!');
-            continue;
-        }
-
-        fill_data(data, needed_bytes, '*');
-        Memory::Heap::free(data);
-    }
+    // for (int i = 0; i <= 100; i++)
+    // {
+    //     int needed_bytes = rand() % 100;
+    //     u8* data = Memory::Heap::alloc<u8>(needed_bytes);
+    //     fill_data(data, needed_bytes, '#');
+    //     printf("\e[1;1H\e[2J");
+    //     printf("Allocating: %d\n", needed_bytes);
+    //     HeapGuard::hex_dump();
+    //     usleep(1000 * 1000);
+    //     if (needed_bytes % 8 == 0)
+    //     {
+    //         // leaks
+    //         fill_data(data, needed_bytes, '!');
+    //         continue;
+    //     }
+    //
+    //     fill_data(data, needed_bytes, '*');
+    //     Memory::Heap::free(data);
+    // }
 
     // u8* data = Memory::Heap::alloc<u8>(16);
     // fill_data(data, 16, '#');
@@ -110,17 +159,18 @@ void test_memory_alloc()
     // fill_data(data, 32 + 8, '@');
 }
 
-void take(Memory::Owner<S> v) {}
+void take(Memory::Owner<LifeTime> v)
+{
+    printf("Inside function to use v!\n");
+}
 
 int main(int argc, char* argv[])
 {
-    HeapGuard::dump();
-    // test_views();
-    // test_memory_copy<128>();
-    // test_memory_alloc();
-    auto p = Memory::Owner<S>::create(1, 2);
-    take(Memory::move(p));
-    // assert(p.get() == nullptr);
-
+    auto handle = FileSystem::open_file("/Users/slemm/Documents/dev/gibber.md"_View);
+    auto buffer = FileSystem::read_file(handle);
+    for (const auto& c : buffer.as_view())
+    {
+        printf("%c", c);
+    }
     HeapGuard::hex_dump();
 }

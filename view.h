@@ -3,6 +3,7 @@
 #include "allocator.h"
 #include "base.h"
 #include "memory.h"
+#include "owner.h"
 
 #ifdef STLEMM_DEBUG
 #include <cstdio>
@@ -18,28 +19,33 @@ public:
     {
         return _ptr;
     }
+
     constexpr usize count() const
     {
         return _item_count;
     }
+
     constexpr usize size() const
     {
         return _item_count * sizeof(T);
     }
 
-    template <typename AllocType>
-    constexpr View<std::remove_cv_t<T>> copy(Allocator::Base<AllocType>& alloc)
+    T* begin()
     {
-        T* new_memory = alloc.alloc(this->size());
-        Memory::copy(new_memory, this->_ptr, this->size());
-        return View<std::remove_cv_t<T>>(new_memory, this->size());
+        return _ptr;
     }
 
-    constexpr View<std::remove_cv_t<T>> copy()
+    T* end()
     {
-        T* new_memory = Memory::Heap::alloc<T>(this->count());
-        Memory::copy(new_memory, this->_ptr, this->size());
-        return View<std::remove_cv_t<T>>(new_memory, this->size());
+        return _ptr + count();
+    }
+
+    Memory::Owner<char> c_str() const
+    {
+        auto ret = Memory::Owner<char>(Memory::Heap::alloc<char>(count() + 1));
+        Memory::copy(ret.get(), this->data(), count());
+        ret.get()[count() + 1] = '\0';
+        return Memory::move(ret);
     }
 
 #ifdef STLEMM_DEBUG
@@ -49,7 +55,7 @@ public:
         printf("View address\t: %p\nItem count\t: %zu\n", _ptr, _item_count);
         if constexpr (std::is_same_v<std::remove_cv_t<T>, char>)
         {
-            printf("Str data\t: %.*s\n", (i32)_item_count, _ptr);
+            printf("Str data\t:\n%.*s\n", (i32)_item_count, _ptr);
         }
     }
 #endif

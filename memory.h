@@ -47,3 +47,9 @@ private:
 };
 
 }  // namespace Memory
+
+// Define our own placement new operator
+inline void* operator new(usize size, void* ptr) noexcept
+{
+    return ptr;
+}
