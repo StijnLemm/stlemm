@@ -3,10 +3,12 @@
 #include <cstdio>
 
 // must be first
+#include "base.h"
 #include "filesystem.h"
 #include "heap_guard.h"
 #include "memory.h"
 #include "owner.h"
+#include "result.h"
 #include "view.h"
 #include "view_owner.h"
 
@@ -164,13 +166,40 @@ void take(Memory::Owner<LifeTime> v)
     printf("Inside function to use v!\n");
 }
 
+enum class FilesystemError
+{
+    FAILED,
+};
+
+using FileSystemResult = Result<Memory::ViewOwner<char>, FilesystemError>;
+
+FileSystemResult get(bool fail)
+{
+    if (fail)
+    {
+        return FilesystemError::FAILED;
+    }
+
+    return Memory::ViewOwner<char>::create(10);
+}
+
+void on_file_read(const FileSystem::FileHandle& handle)
+{
+    handle.read_text().visit([](auto text) { text.as_view().dump(); },
+                             [](auto error) { printf("Error: %d\n", static_cast<int>(error)); });
+}
+
+void on_file_read2(const FileSystem::FileHandle& handle)
+{
+    handle.read_binary().visit([](auto text) { text.as_view().dump(); },
+                               [](auto error) { printf("Error: %d\n", static_cast<int>(error)); });
+}
+
 int main(int argc, char* argv[])
 {
-    auto handle = FileSystem::open_file("/Users/slemm/Documents/dev/gibber.md"_View);
-    auto buffer = FileSystem::read_file(handle);
-    for (const auto& c : buffer.as_view())
-    {
-        printf("%c", c);
-    }
+    FileSystem::get_file_handle("/Users/slemm/Documents/dev/notes/example.md"_View)
+        .visit([](const auto& handle) { on_file_read2(handle); },
+               [](auto error) { printf("Error reading file, %d\n", ascast(error, int)); });
+
     HeapGuard::hex_dump();
 }

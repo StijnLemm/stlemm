@@ -16,14 +16,16 @@ public:
         return Owner<T>(new (mem) T{args...});
     }
 
-    Owner(T* ptr) : _ptr(ptr) {}
+    explicit Owner(T* ptr) : _ptr(ptr) {}
+    explicit Owner() : _ptr(nullptr) {}
+
     ~Owner() noexcept
     {
-        if (_ptr != nullptr)
+        if (this->_ptr != nullptr)
         {
-            _ptr->~T();
+            this->_ptr->~T();
         }
-        Memory::Heap::free(_ptr);
+        Memory::Heap::free(this->_ptr);
     }
 
     Owner(Owner<T>& other) = delete;
@@ -31,13 +33,25 @@ public:
 
     Owner(Owner<T>&& other) noexcept
     {
-        _ptr = other._ptr;
-        other._ptr = nullptr;
+        this->_ptr = other._ptr;
+        other.reset();
     }
-
     Owner(const Owner<T>&& other) = delete;
 
-    T* get()
+    Owner& operator=(Owner<T>&& other)
+    {
+        this->_ptr = other._ptr;
+        other.reset();
+        return *this;
+    }
+    Owner operator=(const Owner<T>&& other) = delete;
+
+    void reset()
+    {
+        _ptr = nullptr;
+    }
+
+    T* get() const
     {
         return _ptr;
     }
@@ -45,18 +59,5 @@ public:
 private:
     T* _ptr;
 };
-
-// template <typename T>
-// class OwnerView : private Owner<T>
-// {
-// public:
-//     constexpr View<T> as_view()
-//     {
-//         return View<T>(get(), size);
-//     }
-//
-// private:
-//     const usize size;
-// };
 
 }  // namespace Memory

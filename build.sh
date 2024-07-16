@@ -12,7 +12,7 @@ if [ $# = 1 ]; then
 fi
 
 echo '[INFO] Building 64-bit!'
-time  clang++ -Wno-deprecated-declarations -std=c++17 main.cpp memory.cpp -o ./build/program
+time  clang++ -Wno-deprecated-declarations -std=c++17 -g main.cpp memory.cpp filesystem.cpp -o ./build/program
 time ./build/program
 echo '[INFO] Done'
 

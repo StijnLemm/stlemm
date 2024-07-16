@@ -14,7 +14,7 @@ template <typename T>
 class View
 {
 public:
-    explicit View(T* ptr, const usize count) : _ptr(ptr), _item_count(count) {}
+    View(T* ptr, const usize count) : _ptr(ptr), _item_count(count) {}
     constexpr T* data() const
     {
         return _ptr;
@@ -44,12 +44,12 @@ public:
     {
         auto ret = Memory::Owner<char>(Memory::Heap::alloc<char>(count() + 1));
         Memory::copy(ret.get(), this->data(), count());
-        ret.get()[count() + 1] = '\0';
+        ret.get()[count()] = '\0';
         return Memory::move(ret);
     }
 
 #ifdef STLEMM_DEBUG
-    void dump()
+    void dump() const
     {
         printf("--- View debug info: ---\n");
         printf("View address\t: %p\nItem count\t: %zu\n", _ptr, _item_count);

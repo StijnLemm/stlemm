@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <cstddef>  // TODO: get rid of this include
 #include <cstdint>
 
@@ -19,3 +20,7 @@ using usize = size_t;
 
 #define implicit
 #define STLEMM_DEBUG
+#define expect(cond, message) assert(cond&& message)
+
+// casting
+#define ascast(v, T) static_cast<T>(v)

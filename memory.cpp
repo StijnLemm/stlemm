@@ -11,8 +11,8 @@ void copy_void(void* dest, const void* src, const usize size) noexcept
 {
     constexpr usize transfer_size = sizeof(usize);
 
-    usize* dest_iter_uz = (usize*)dest;
-    usize* src_iter_uz = (usize*)src;
+    usize* dest_iter_uz = ascast(dest, usize*);
+    const usize* src_iter_uz = ascast(src, const usize*);
     const usize* dest_ter_goal_uz = dest_iter_uz + (size / transfer_size);
     for (; dest_iter_uz < dest_ter_goal_uz; dest_iter_uz++)
     {
@@ -33,31 +33,56 @@ void copy_void(void* dest, const void* src, const usize size) noexcept
 
 }  // namespace Memory
 
-static constexpr usize CHUNK_IN_USE_FLAG = ((usize)1 << ((sizeof(usize) * 8) - 1));
+static constexpr usize CHUNK_IN_USE_FLAG = (ascast(1, usize) << ((sizeof(usize) * 8) - 1));
 static constexpr usize MAX_CHUNK_SIZE = CHUNK_IN_USE_FLAG - 1;
 
-struct MemoryChunk
+class MemoryChunk
 {
-    // MemoryChunk* prev = nullptr;
-    // MemoryChunk* next = nullptr;
-    // usize in_use = 0;
-    usize size = 0;
+public:
+    constexpr MemoryChunk(const usize size) : _size(size) {}
+
+    static MemoryChunk tail()
+    {
+        return MemoryChunk(0);
+    }
 
     constexpr usize chunk_size() const
     {
-        return this->size & ~CHUNK_IN_USE_FLAG;
+        return this->_size & ~CHUNK_IN_USE_FLAG;
     }
 
     constexpr void set_chunk_size(const usize size)
     {
         if (is_used())
         {
-            this->size = size + CHUNK_IN_USE_FLAG;
+            this->_size = size + CHUNK_IN_USE_FLAG;
         }
         else
         {
-            this->size = size;
+            this->_size = size;
         }
+    }
+
+    constexpr bool is_used() const
+    {
+        return this->_size & CHUNK_IN_USE_FLAG;
+    }
+
+    constexpr void set_used(const bool used)
+    {
+        if (used)
+        {
+            this->_size |= CHUNK_IN_USE_FLAG;
+        }
+        else
+        {
+            this->_size &= ~CHUNK_IN_USE_FLAG;
+        }
+    }
+
+    constexpr MemoryChunk* next_chunk()
+    {
+        return (MemoryChunk*)((this->data_ptr_as<u8>()) + this->chunk_size());
     }
 
     constexpr usize combined_chunk_size(const MemoryChunk* other) const
@@ -70,33 +95,14 @@ struct MemoryChunk
         this->set_chunk_size(combined_chunk_size(other));
     }
 
-    constexpr bool is_used() const
-    {
-        return this->size & CHUNK_IN_USE_FLAG;
-    }
-
-    constexpr void set_used(const bool used)
-    {
-        if (used)
-        {
-            this->size |= CHUNK_IN_USE_FLAG;
-        }
-        else
-        {
-            this->size &= ~CHUNK_IN_USE_FLAG;
-        }
-    }
-
-    constexpr MemoryChunk* next_chunk()
-    {
-        return (MemoryChunk*)((this->data_ptr<u8>()) + this->chunk_size());
-    }
-
     template <typename T>
-    constexpr T* data_ptr()
+    constexpr T* data_ptr_as()
     {
-        return reinterpret_cast<T*>(this + 1);
+        return (T*)(this + 1);
     }
+
+private:
+    usize _size = 0;
 };
 
 static MemoryChunk* memoryChunks = (MemoryChunk*)sbrk(sizeof(MemoryChunk));
@@ -109,7 +115,7 @@ void* Memory::Heap::start()
 
 void Memory::Heap::free_void(void* ptr) noexcept
 {
-    MemoryChunk* chunk_ptr = (MemoryChunk*)ptr;
+    MemoryChunk* chunk_ptr = ascast(ptr, MemoryChunk*);
     chunk_ptr--;
     chunk_ptr->set_used(false);
 }
@@ -133,7 +139,7 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
         {
             prev->combine_into_me(iter);
             prev->set_used(true);
-            return prev->data_ptr<void>();
+            return prev->data_ptr_as<void>();
         }
 
         prev = iter;
@@ -145,16 +151,14 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
         sbrk(needed_bytes + sizeof(MemoryChunk));
 
         // set next to tail.
-        *(iter->next_chunk()) = MemoryChunk{
-            0,  // size
-        };
+        *(iter->next_chunk()) = MemoryChunk::tail();
 
         // set size of chunk
         iter->set_chunk_size(needed_bytes);
         iter->set_used(true);
-        return iter->data_ptr<void>();
+        return iter->data_ptr_as<void>();
     }
 
     iter->set_used(true);
-    return iter->data_ptr<void>();
+    return iter->data_ptr_as<void>();
 }

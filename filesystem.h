@@ -1,6 +1,9 @@
 #pragma once
 
+#include <cerrno>
+
 #include "owner.h"
+#include "result.h"
 #include "view_owner.h"
 
 // Forward decl file. no stdlib needed.
@@ -9,17 +12,40 @@ typedef __sFILE FILE;
 
 namespace FileSystem
 {
+
+enum class FileOpError
+{
+    READ_EOF,
+    READ_IO_FAIL,
+    READ_GENERIC_FAIL,
+};
+
 class FileHandle
 {
 public:
+    FileHandle(FILE* handle, Memory::Owner<char> path) noexcept;
     ~FileHandle() noexcept;
-    usize read_file_size() noexcept;
 
+    FileHandle(FileHandle&& other) noexcept
+    {
+        this->_handle = other._handle;
+        other._handle = nullptr;
+
+        this->_path = Memory::move(other._path);
+    }
+
+    usize read_file_size() const noexcept;
+
+    template <typename T>
+    using ReadResult = Result<Memory::ViewOwner<T>, FileOpError>;
+    ReadResult<char> read_text() const noexcept;
+    ReadResult<u8> read_binary() const noexcept;
+
+private:
     FILE* _handle = nullptr;
     Memory::Owner<char> _path;
 };
 
-FileHandle open_file(const View<const char>& path);
-Memory::ViewOwner<u8> read_file(FileHandle& handle);
+DefaultResult<FileHandle> get_file_handle(const View<const char>& path) noexcept;
 
 }  // namespace FileSystem
