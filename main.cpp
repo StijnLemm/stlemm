@@ -15,12 +15,9 @@
 class LifeTime
 {
 public:
-    char mem[8];
     // Default constructor
     LifeTime()
     {
-        const char* text = "LifeTime";
-        Memory::copy(mem, text, 8);
         printf("[LifeTime] Default constructor called\n");
     }
 
@@ -64,19 +61,6 @@ void test_views()
     v1.dump();
 }
 
-void* naive_alloc(const usize size)
-{
-    void* prev = sbrk(0);  // this is what gets returned
-
-    if (sbrk(size) == (void*)-1)
-    {
-        printf("Alloc failed, size requested: %zu\n", size);
-        return nullptr;
-    }
-
-    return prev;
-}
-
 struct S
 {
     i32 a;
@@ -86,7 +70,7 @@ struct S
 template <usize size>
 void test_memory_copy()
 {
-    u8* new_data = (u8*)naive_alloc(size);
+    u8* new_data = Memory::Heap::alloc<u8>(size);
     u8 need_copy[size] = {0};
     for (usize i = 0; i < size; i++)
     {
@@ -97,7 +81,7 @@ void test_memory_copy()
 
 void test_memory_copy_typed()
 {
-    S* ptr = (S*)naive_alloc(sizeof(S) * 10);
+    S* ptr = Memory::Heap::alloc<S>(10);
     S array[10];
     for (i16 i = 0; i < 10; i++)
     {
