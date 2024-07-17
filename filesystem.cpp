@@ -8,7 +8,6 @@
 #include "memory.h"
 #include "owner.h"
 #include "result.h"
-#include "view_owner.h"
 
 namespace FileSystem
 {
@@ -50,7 +49,7 @@ FileOpError retrieve_read_error(FILE* handle)
 template <typename T>
 FileHandle::ReadResult<T> read(FILE* handle, const usize file_size)
 {
-    auto buffer = Memory::ViewOwner<T>::create(file_size);
+    auto buffer = Memory::List<T>::create(file_size);
     const usize bytes_read = fread(buffer.get(), 1, file_size, handle);
 
     // something went wrong if these do not match.

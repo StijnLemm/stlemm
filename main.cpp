@@ -2,15 +2,11 @@
 
 #include <cstdio>
 
-// must be first
 #include "base.h"
 #include "filesystem.h"
 #include "heap_guard.h"
 #include "memory.h"
 #include "owner.h"
-#include "result.h"
-#include "view.h"
-#include "view_owner.h"
 
 class LifeTime
 {
@@ -145,6 +141,15 @@ void test_memory_alloc()
     // fill_data(data, 32 + 8, '@');
 }
 
+void test_list()
+{
+    auto list = Memory::List<int>::create(100);
+    for (auto& num : list.as_view())
+    {
+        num = 9999;
+    }
+}
+
 void take(Memory::Owner<LifeTime> v)
 {
     printf("Inside function to use v!\n");
@@ -155,7 +160,7 @@ enum class FilesystemError
     FAILED,
 };
 
-using FileSystemResult = Result<Memory::ViewOwner<char>, FilesystemError>;
+using FileSystemResult = Result<Memory::List<char>, FilesystemError>;
 
 FileSystemResult get(bool fail)
 {
@@ -164,7 +169,7 @@ FileSystemResult get(bool fail)
         return FilesystemError::FAILED;
     }
 
-    return Memory::ViewOwner<char>::create(10);
+    return Memory::List<char>::create(10);
 }
 
 void on_file_read(const FileSystem::FileHandle& handle)
@@ -181,9 +186,11 @@ void on_file_read2(const FileSystem::FileHandle& handle)
 
 int main(int argc, char* argv[])
 {
-    FileSystem::get_file_handle("/Users/slemm/Documents/dev/notes/example.md"_View)
-        .visit([](const auto& handle) { on_file_read2(handle); },
-               [](auto error) { printf("Error reading file, %d\n", ascast(error, int)); });
+    // FileSystem::get_file_handle("/Users/slemm/Documents/dev/notes/example.md"_View)
+    //     .visit([](const auto& handle) { on_file_read2(handle); },
+    //            [](auto error) { printf("Error reading file, %d\n", ascast(error, int)); });
+
+    test_list();
 
     HeapGuard::hex_dump();
 }

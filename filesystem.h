@@ -1,10 +1,8 @@
 #pragma once
 
-#include <cerrno>
-
+#include "list.h"
 #include "owner.h"
 #include "result.h"
-#include "view_owner.h"
 
 // Forward decl file. no stdlib needed.
 struct __sFILE;
@@ -37,7 +35,7 @@ public:
     usize read_file_size() const noexcept;
 
     template <typename T>
-    using ReadResult = Result<Memory::ViewOwner<T>, FileOpError>;
+    using ReadResult = Result<Memory::List<T>, FileOpError>;
     ReadResult<char> read_text() const noexcept;
     ReadResult<u8> read_binary() const noexcept;
 

@@ -105,6 +105,7 @@ private:
     usize _size = 0;
 };
 
+static constexpr usize MIN_CHUNK_SIZE = 64u;
 static MemoryChunk* memoryChunks = (MemoryChunk*)sbrk(sizeof(MemoryChunk));
 static void* _start = (memoryChunks);
 
@@ -148,14 +149,19 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
 
     if (iter->chunk_size() == 0)
     {
-        sbrk(needed_bytes + sizeof(MemoryChunk));
+        const usize new_chunk_size =
+            (needed_bytes > MIN_CHUNK_SIZE) ? needed_bytes : MIN_CHUNK_SIZE;
+        const usize allocating_space = new_chunk_size + sizeof(MemoryChunk);
+
+        sbrk(allocating_space);
+
+        // set size of chunk and used
+        iter->set_chunk_size(new_chunk_size);
+        iter->set_used(true);
 
         // set next to tail.
         *(iter->next_chunk()) = MemoryChunk::tail();
 
-        // set size of chunk
-        iter->set_chunk_size(needed_bytes);
-        iter->set_used(true);
         return iter->data_ptr_as<void>();
     }
 

@@ -51,7 +51,7 @@ public:
         _ptr = nullptr;
     }
 
-    T* get() const
+    constexpr T* get() const
     {
         return _ptr;
     }
