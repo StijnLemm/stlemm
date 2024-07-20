@@ -147,7 +147,7 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
     MemoryChunk* iter = memoryChunks;
     MemoryChunk* prev = nullptr;
 
-    while (!iter->is_tail() && (iter->is_used() || iter->chunk_size() < needed_bytes))
+    while (!iter->is_tail() && (iter->is_used() || iter->would_fit(needed_bytes)))
     {
         if (!iter->is_used() && prev != nullptr && !prev->is_used() &&
             prev->combined_chunk_size(iter) >= needed_bytes)
@@ -190,7 +190,7 @@ void* Memory::Heap::realloc_sz(void* ptr, const usize new_size) noexcept
     MemoryChunk* chunk_ptr = MemoryChunk::from_data_ptr(ptr);
 
     // check if the chunk is big enough for resize.
-    if (chunk_ptr->chunk_size() >= new_size)
+    if (chunk_ptr->would_fit(new_size))
     {
         return ptr;
     }
