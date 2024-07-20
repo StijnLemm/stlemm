@@ -30,6 +30,12 @@ public:
     }
 
     template <typename T>
+    static constexpr T* realloc(T* ptr, const usize count) noexcept
+    {
+        return (T*)realloc_sz(ptr, sizeof(T) * count);
+    }
+
+    template <typename T>
     static constexpr void free(T* ptr) noexcept
     {
         if (ptr == nullptr) return;
@@ -41,6 +47,7 @@ public:
 
 private:
     static void* alloc_sz(const usize size) noexcept;
+    static void* realloc_sz(void* ptr, const usize new_size) noexcept;
     static void free_void(void* ptr) noexcept;
 
     friend class HeapGuard;

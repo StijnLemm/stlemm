@@ -46,6 +46,16 @@ public:
         return MemoryChunk(0);
     }
 
+    constexpr bool is_tail()
+    {
+        return chunk_size() == 0;
+    }
+
+    constexpr bool would_fit(const usize size)
+    {
+        return chunk_size() >= size;
+    }
+
     constexpr usize chunk_size() const
     {
         return this->_size & ~CHUNK_IN_USE_FLAG;
@@ -101,6 +111,11 @@ public:
         return (T*)(this + 1);
     }
 
+    static MemoryChunk* from_data_ptr(void* ptr)
+    {
+        return ascast(ptr, MemoryChunk*) - 1;
+    }
+
 private:
     usize _size = 0;
 };
@@ -116,8 +131,7 @@ void* Memory::Heap::start()
 
 void Memory::Heap::free_void(void* ptr) noexcept
 {
-    MemoryChunk* chunk_ptr = ascast(ptr, MemoryChunk*);
-    chunk_ptr--;
+    MemoryChunk* chunk_ptr = MemoryChunk::from_data_ptr(ptr);
     chunk_ptr->set_used(false);
 }
 
@@ -133,7 +147,7 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
     MemoryChunk* iter = memoryChunks;
     MemoryChunk* prev = nullptr;
 
-    while (iter->chunk_size() != 0 && (iter->is_used() || iter->chunk_size() < needed_bytes))
+    while (!iter->is_tail() && (iter->is_used() || iter->chunk_size() < needed_bytes))
     {
         if (!iter->is_used() && prev != nullptr && !prev->is_used() &&
             prev->combined_chunk_size(iter) >= needed_bytes)
@@ -147,7 +161,7 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
         iter = iter->next_chunk();
     }
 
-    if (iter->chunk_size() == 0)
+    if (iter->is_tail())
     {
         const usize new_chunk_size =
             (needed_bytes > MIN_CHUNK_SIZE) ? needed_bytes : MIN_CHUNK_SIZE;
@@ -167,4 +181,60 @@ void* Memory::Heap::alloc_sz(const usize size) noexcept
 
     iter->set_used(true);
     return iter->data_ptr_as<void>();
+}
+
+// TODO: if the new_size < chunk_ptr->chunk_size() then we need to make it smaller and create a new
+// chunk?
+void* Memory::Heap::realloc_sz(void* ptr, const usize new_size) noexcept
+{
+    MemoryChunk* chunk_ptr = MemoryChunk::from_data_ptr(ptr);
+
+    // check if the chunk is big enough for resize.
+    if (chunk_ptr->chunk_size() >= new_size)
+    {
+        return ptr;
+    }
+
+    // check if the next chunk is not in use and big enough to merge.
+    // NOTE: we could check the next chunk again if the next is only not big enough to merge more
+    // chunks into one.
+    MemoryChunk* iter = chunk_ptr->next_chunk();
+
+    MemoryChunk accumulator_chunk(chunk_ptr->chunk_size());
+    while (!iter->is_tail() && !iter->is_used())
+    {
+        // add their chunk size to the combine attempt
+        accumulator_chunk.combine_into_me(iter);
+
+        if (accumulator_chunk.would_fit(new_size))
+        {
+            chunk_ptr->set_chunk_size(accumulator_chunk.chunk_size());
+            return ptr;
+        }
+
+        iter = iter->next_chunk();
+    }
+
+    // if iter is tail, we could resize heap
+    if (iter->is_tail())
+    {
+        // add ptr allignment, the chunk size is allready the at minimum the size of a minimum
+        // chunk.
+        const usize alligned_size = calculate_aligned_size(new_size);
+
+        // allocate the remaining space WITH the padded minimum chunk size.
+        sbrk(alligned_size - accumulator_chunk.chunk_size());
+
+        chunk_ptr->set_chunk_size(alligned_size);
+
+        // set next to tail.
+        *(chunk_ptr->next_chunk()) = MemoryChunk::tail();
+        return ptr;
+    }
+
+    // if iter is used we need to reallocate the chunk somewhere else and copy. Ouch!
+    free(ptr);
+    auto new_mem = alloc_sz(new_size);
+    copy_void(new_mem, ptr, new_size);
+    return new_mem;
 }

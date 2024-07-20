@@ -94,6 +94,11 @@ void fill_data(u8* data, const usize size, u8 c)
     }
 }
 
+void clear_console()
+{
+    printf("\e[1;1H\e[2J");
+}
+
 void test_memory_alloc()
 {
     // helper_memory_alloc(8);
@@ -143,11 +148,46 @@ void test_memory_alloc()
 
 void test_list()
 {
-    auto list = Memory::List<int>::create(100);
-    for (auto& num : list.as_view())
+    // auto ptr = Memory::Heap::alloc<u8>(10);
+    // auto ptr1 = Memory::Heap::alloc<u8>(10);
+    //
+    // auto list = Memory::List<int>::create(64);
+    // for (auto& num : list.as_view())
+    // {
+    //     num = (usize)-1;
+    // }
+    // list.reserve(120);
+
+    auto list = Memory::List<u8>::create();
+    for (int i = 0; i < 256; i++)
     {
-        num = 9999;
+        list.add(i);
     }
+}
+
+void test_realloc()
+{
+    auto ptr = Memory::Heap::alloc<u8>(10);
+    auto ptr1 = Memory::Heap::alloc<u8>(10);
+    auto ptr2 = Memory::Heap::alloc<u8>(10);
+    auto ptr3 = Memory::Heap::alloc<u8>(10);
+
+    // add to tail
+    auto r_ptr = Memory::Heap::realloc(ptr3, 128);
+    expect(r_ptr == ptr3, "must stay the same ptr");
+
+    // auto r_ptr = Memory::Heap::realloc(ptr, 65);
+    // expect(r_ptr == ptr, "must stay the same ptr");
+    //
+    // Memory::Heap::free(ptr1);
+    //
+    // r_ptr = Memory::Heap::realloc(ptr, 128);
+    // expect(r_ptr == ptr, "must stay the same ptr");
+    //
+    // Memory::Heap::free(ptr2);
+    //
+    // r_ptr = Memory::Heap::realloc(ptr, 140);
+    // expect(r_ptr == ptr, "must stay the same ptr");
 }
 
 void take(Memory::Owner<LifeTime> v)
@@ -191,6 +231,7 @@ int main(int argc, char* argv[])
     //            [](auto error) { printf("Error reading file, %d\n", ascast(error, int)); });
 
     test_list();
+    // test_realloc();
 
     HeapGuard::hex_dump();
 }

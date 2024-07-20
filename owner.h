@@ -56,7 +56,7 @@ public:
         return _ptr;
     }
 
-private:
+protected:
     T* _ptr;
 };
 
